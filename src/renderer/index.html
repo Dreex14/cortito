@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; img-src 'self' file: data: blob:; media-src 'self' file: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>Cortito</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Barra de título -->
+  <header class="titlebar">
+    <div class="brand">
+      <div class="logo"><i data-icon="scissors"></i></div>
+      <span class="brand-name">Cortito</span>
+    </div>
+    <div class="file-chip hidden" id="fileChip">
+      <i data-icon="film"></i><span id="fileName"></span><span class="meta" id="fileMeta"></span>
+    </div>
+    <div class="title-actions">
+      <button class="icon-btn" id="btnUndo" title="Deshacer (Ctrl+Z)" disabled><i data-icon="undo"></i></button>
+      <button class="icon-btn" id="btnRedo" title="Rehacer (Ctrl+Y)" disabled><i data-icon="redo"></i></button>
+      <button class="btn ghost" id="btnOpen"><i data-icon="folder"></i>Abrir</button>
+      <button class="btn primary" id="btnExport" disabled><i data-icon="download"></i>Exportar</button>
+    </div>
+  </header>
+
+  <!-- Pantalla de bienvenida -->
+  <section class="welcome" id="welcome">
+    <div class="drop" id="dropZone">
+      <div class="drop-glow"></div>
+      <div class="drop-icon"><i data-icon="upload"></i></div>
+      <h1>Suelta aquí tu vídeo</h1>
+      <p>o pulsa para elegirlo. Recorta, encuadra, cambia el audio y añade capas<br />sin perder calidad.</p>
+      <button class="btn primary big" id="btnOpenBig"><i data-icon="folder"></i>Abrir vídeo</button>
+      <div class="formats">MP4 · MOV · MKV · WEBM · AVI · y más</div>
+    </div>
+  </section>
+
+  <!-- Editor -->
+  <main class="editor hidden" id="editor">
+    <section class="stage">
+      <div class="viewer" id="viewer">
+        <div class="frame" id="frame">
+          <video id="video" preload="auto" playsinline></video>
+          <div class="ov-layer" id="ovLayer"></div>
+          <div class="crop-layer" id="cropLayer">
+            <div class="crop-box" id="cropBox">
+              <div class="grid"><span></span><span></span><span></span><span></span></div>
+              <div class="h nw" data-h="nw"></div><div class="h ne" data-h="ne"></div>
+              <div class="h sw" data-h="sw"></div><div class="h se" data-h="se"></div>
+              <div class="e n" data-h="n"></div><div class="e s" data-h="s"></div>
+              <div class="e w" data-h="w"></div><div class="e ee" data-h="e"></div>
+              <div class="crop-size" id="cropSize"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="transport">
+        <div class="time"><span id="tCur">0:00.00</span><span class="sep">/</span><span id="tDur">0:00.00</span></div>
+        <div class="controls">
+          <button class="icon-btn" id="btnStart" title="Ir al inicio (Inicio)"><i data-icon="skipBack"></i></button>
+          <button class="icon-btn" id="btnPrev" title="Fotograma anterior (←)"><i data-icon="chevL"></i></button>
+          <button class="play" id="btnPlay" title="Reproducir / pausar (Espacio)"><i data-icon="play"></i></button>
+          <button class="icon-btn" id="btnNext" title="Fotograma siguiente (→)"><i data-icon="chevR"></i></button>
+          <button class="icon-btn" id="btnEnd" title="Ir al final (Fin)"><i data-icon="skipFwd"></i></button>
+        </div>
+        <div class="out-info"><span class="pill" id="outDur">Resultado 0:00</span></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <nav class="tabs" id="tabs">
+        <button data-tab="trim" class="active"><i data-icon="scissors"></i>Cortar</button>
+        <button data-tab="crop"><i data-icon="crop"></i>Encuadre</button>
+        <button data-tab="audio"><i data-icon="volume"></i>Audio</button>
+        <button data-tab="layers"><i data-icon="layers"></i>Capas</button>
+        <span class="tab-ink" id="tabInk"></span>
+      </nav>
+
+      <div class="tab-body">
+        <!-- CORTAR -->
+        <div class="pane active" data-pane="trim">
+          <h3>Línea de tiempo</h3>
+          <p class="hint">Arrastra los <b class="y">bordes amarillos</b> para recortar el principio y el final. Divide en el cabezal para quitar trozos del medio.</p>
+          <div class="btn-grid">
+            <button class="tile" id="btnSplit"><i data-icon="split"></i><span>Dividir</span><kbd>S</kbd></button>
+            <button class="tile danger" id="btnDelSeg"><i data-icon="trash"></i><span>Quitar tramo</span><kbd>Supr</kbd></button>
+            <button class="tile" id="btnSetIn"><i data-icon="bracketL"></i><span>Inicio aquí</span><kbd>I</kbd></button>
+            <button class="tile" id="btnSetOut"><i data-icon="bracketR"></i><span>Fin aquí</span><kbd>O</kbd></button>
+          </div>
+          <div class="card" id="segList"></div>
+          <button class="btn ghost full" id="btnResetTrim"><i data-icon="reset"></i>Restablecer cortes</button>
+        </div>
+
+        <!-- ENCUADRE -->
+        <div class="pane" data-pane="crop">
+          <h3>Recortar encuadre</h3>
+          <p class="hint">Arrastra las esquinas sobre el vídeo para quitar los bordes que sobren.</p>
+          <div class="chips" id="aspectChips">
+            <button data-ar="free" class="active">Libre</button>
+            <button data-ar="orig">Original</button>
+            <button data-ar="16:9">16:9</button>
+            <button data-ar="9:16">9:16</button>
+            <button data-ar="1:1">1:1</button>
+            <button data-ar="4:5">4:5</button>
+            <button data-ar="4:3">4:3</button>
+            <button data-ar="3:4">3:4</button>
+            <button data-ar="21:9">21:9</button>
+          </div>
+          <div class="card stat-card">
+            <div><span class="label">Tamaño original</span><b id="cropSrcRes">—</b></div>
+            <div class="arrow">→</div>
+            <div><span class="label">Tamaño final</span><b id="cropOutRes">—</b></div>
+          </div>
+          <div class="row2">
+            <button class="btn ghost" id="btnCropCenter"><i data-icon="center"></i>Centrar</button>
+            <button class="btn ghost" id="btnCropReset"><i data-icon="reset"></i>Quitar recorte</button>
+          </div>
+        </div>
+
+        <!-- AUDIO -->
+        <div class="pane" data-pane="audio">
+          <h3>Audio original</h3>
+          <div class="card">
+            <div class="field hidden" id="trackField">
+              <label>Pista</label>
+              <select id="trackSelect"></select>
+            </div>
+            <div class="vol-row">
+              <button class="icon-btn toggle" id="btnMute" title="Silenciar (M)"><i data-icon="volume"></i></button>
+              <input type="range" id="volOrig" min="0" max="200" value="100" />
+              <span class="val" id="volOrigVal">100%</span>
+            </div>
+            <p class="hint small" id="noAudioHint" hidden>Este vídeo no tiene audio.</p>
+          </div>
+
+          <h3>Música o audio añadido</h3>
+          <button class="add-btn" id="btnAddMusic"><i data-icon="music"></i><span>Añadir canción o audio</span><small>MP3, M4A, WAV, FLAC… o el audio de otro vídeo</small></button>
+          <div class="card hidden" id="musicCard">
+            <div class="media-head">
+              <div class="media-ico music"><i data-icon="music"></i></div>
+              <div class="media-txt"><b id="musicName"></b><span id="musicMeta"></span></div>
+              <button class="icon-btn" id="btnDelMusic" title="Quitar"><i data-icon="x"></i></button>
+            </div>
+            <div class="vol-row">
+              <i data-icon="volume" class="dim"></i>
+              <input type="range" id="volMusic" min="0" max="200" value="100" />
+              <span class="val" id="volMusicVal">100%</span>
+            </div>
+            <div class="field inline">
+              <label>Empieza en el vídeo</label>
+              <div class="time-input"><input id="musicStart" type="text" /><button class="mini" id="btnMusicHere" title="Usar posición del cabezal">Cabezal</button></div>
+            </div>
+            <div class="field inline">
+              <label>Desde el segundo de la canción</label>
+              <div class="time-input"><input id="musicOffset" type="text" /></div>
+            </div>
+            <div class="switches">
+              <label class="switch"><input type="checkbox" id="musicLoop" /><span></span>Repetir en bucle</label>
+              <label class="switch"><input type="checkbox" id="musicFadeIn" /><span></span>Fundido de entrada</label>
+              <label class="switch"><input type="checkbox" id="musicFadeOut" checked /><span></span>Fundido de salida</label>
+            </div>
+            <button class="btn ghost full" id="btnReplaceAudio"><i data-icon="volumeX"></i>Sustituir el audio original</button>
+          </div>
+        </div>
+
+        <!-- CAPAS -->
+        <div class="pane" data-pane="layers">
+          <h3>Fotos y vídeos encima</h3>
+          <button class="add-btn" id="btnAddLayer"><i data-icon="image"></i><span>Añadir foto o vídeo</span><small>Muévelo y redimensiónalo sobre la imagen</small></button>
+          <div id="layerList" class="layer-list"></div>
+        </div>
+      </div>
+
+      <!-- Exportación -->
+      <div class="export-box">
+        <div class="export-row">
+          <div class="seg-ctl" id="fmtCtl">
+            <button data-fmt="mp4" class="active">MP4</button>
+            <button data-fmt="mov">MOV</button>
+            <button data-fmt="mkv">MKV</button>
+          </div>
+          <button class="icon-btn sm" id="btnAdv" title="Opciones de códec"><i data-icon="sliders"></i></button>
+        </div>
+        <div class="field">
+          <select id="qualitySelect" title="Calidad">
+            <option value="auto">Automática · la del original</option>
+            <option value="original">Original · sin recodificar</option>
+            <option value="max">Máxima · visualmente idéntica</option>
+            <option value="high">Alta · menos peso</option>
+            <option value="light">Ligera · para compartir</option>
+          </select>
+        </div>
+        <div class="field hidden" id="codecField">
+          <label>Códec de vídeo</label>
+          <select id="codecSelect">
+            <option value="same">Igual que el original</option>
+            <option value="h264">H.264 · máxima compatibilidad</option>
+            <option value="h265">H.265 / HEVC · ocupa menos</option>
+          </select>
+        </div>
+        <div class="q-note" id="qNote"></div>
+      </div>
+    </aside>
+
+    <!-- Línea de tiempo -->
+    <section class="timeline" id="timeline">
+      <div class="tl-head">
+        <div class="tl-labels">
+          <span><i data-icon="film"></i>Vídeo</span>
+          <span id="lblAudio"><i data-icon="volume"></i>Audio</span>
+          <span id="lblMusic" class="hidden"><i data-icon="music"></i>Música</span>
+          <span id="lblLayers" class="hidden"><i data-icon="layers"></i>Capas</span>
+        </div>
+        <div class="tl-zoom">
+          <button class="icon-btn sm" id="btnZoomOut" title="Alejar"><i data-icon="zoomOut"></i></button>
+          <input type="range" id="zoom" min="1" max="20" step="0.1" value="1" />
+          <button class="icon-btn sm" id="btnZoomIn" title="Acercar"><i data-icon="zoomIn"></i></button>
+        </div>
+      </div>
+      <div class="tl-scroll" id="tlScroll">
+        <div class="tl-inner" id="tlInner">
+          <div class="ruler" id="ruler"></div>
+          <div class="track video-track" id="videoTrack">
+            <div class="thumbs" id="thumbs"></div>
+            <div class="gaps" id="gapsV"></div>
+            <div class="segments" id="segments"></div>
+          </div>
+          <div class="track audio-track" id="audioTrack">
+            <div class="wave" id="wave"></div>
+            <div class="gaps" id="gapsA"></div>
+          </div>
+          <div class="track music-track hidden" id="musicTrack"></div>
+          <div class="layer-tracks" id="layerTracks"></div>
+          <div class="playhead" id="playhead"><div class="knob"></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Carga -->
+  <div class="modal hidden" id="loading">
+    <div class="sheet small">
+      <div class="spinner"></div>
+      <b id="loadingText">Cargando…</b>
+      <div class="bar hidden" id="loadingBarWrap"><div id="loadingBar"></div></div>
+    </div>
+  </div>
+
+  <!-- Exportación -->
+  <div class="modal hidden" id="exportModal">
+    <div class="sheet">
+      <div class="ring" id="ring">
+        <svg viewBox="0 0 120 120"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b6cff"/><stop offset="1" stop-color="#ff5ca8"/></linearGradient></defs>
+          <circle cx="60" cy="60" r="52" class="track-c" /><circle cx="60" cy="60" r="52" class="prog-c" id="ringProg" /></svg>
+        <div class="ring-txt" id="ringTxt">0%</div>
+      </div>
+      <h2 id="exTitle">Exportando…</h2>
+      <p class="hint" id="exSub"></p>
+      <div class="sheet-actions" id="exActions">
+        <button class="btn ghost" id="btnCancelExport">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+  <div class="drag-hint hidden" id="dragHint"><div><i data-icon="upload"></i><span id="dragHintText">Suelta para abrir</span></div></div>
+
+  <script src="icons.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

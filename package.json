@@ -1,0 +1,58 @@
+{
+  "name": "cortito",
+  "version": "1.0.0",
+  "description": "Editor de vídeo pequeñito: recorta, encuadra, cambia el audio y añade capas sin perder calidad.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "author": "Dreex",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.3.0",
+    "ffprobe-static": "^3.1.0"
+  },
+  "allowScripts": {
+    "ffmpeg-static@5.3.0": true,
+    "electron-winstaller@5.4.0": true,
+    "electron@45.4.1": true
+  },
+  "productName": "Cortito",
+  "build": {
+    "appId": "com.dreex.cortito",
+    "productName": "Cortito",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json",
+      "node_modules/ffmpeg-static/ffmpeg.exe",
+      "node_modules/ffmpeg-static/index.js",
+      "node_modules/ffmpeg-static/package.json",
+      "node_modules/ffprobe-static/index.js",
+      "node_modules/ffprobe-static/package.json",
+      "node_modules/ffprobe-static/bin/win32/x64/**",
+      "!node_modules/ffprobe-static/bin/darwin/**",
+      "!node_modules/ffprobe-static/bin/linux/**",
+      "!node_modules/ffprobe-static/bin/win32/ia32/**"
+    ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/ffmpeg.exe",
+      "node_modules/ffprobe-static/bin/win32/x64/**"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "build/icon.png"
+    },
+    "portable": {
+      "artifactName": "Cortito.exe"
+    }
+  }
+}
